@@ -69,8 +69,8 @@ And also the inverse transform : $\mathbf{x} = \mathbf{U}\mathbf{\hat x}$. So, b
 
 $$ \mathbf{y} = h(\mathbf{L}) \mathbf{x} = h (\mathbf{U\Lambda U}^\mathrm{T}) \mathbf{x} = \mathbf{U}h(\mathbf{\Lambda})\mathbf{U}^\mathrm{T}\mathbf{x} $$
 
-Note that our FEM Laplacian does not have orthogonal eigenvectors like the standard graph Laplacian. This is fine, we just need to replace every $\mathbf{U}^\mathrm{T}$ with a $\mathbf{U}^\mathrm{-1}$
-This is fine, but we usually don't want to compute the eigendecomposition of $\mathbf{L}$. Indeed, since we will need many different $\mathbf{L}$'s (one for each layer), this decomposition would need to be computed multiple times.
+Note that our FEM Laplacian does not have orthogonal eigenvectors like the standard graph Laplacian. This is fine, we just need to replace every $\mathbf{U}^\mathrm{T}$ with a $\mathbf{U}^\mathrm{-1}$.
+Also this all works, but we usually don't want to compute the eigendecomposition of $\mathbf{L}$. Indeed, since we will need many different $\mathbf{L}$'s (one for each layer), this decomposition would need to be computed multiple times.
 
 So, in order to increase performance, we limit ourselves to filters that are polynomial :
 
@@ -97,7 +97,7 @@ This series of system resolutions can be done efficiently, since $\mathbf{A}$ an
 ## History
 ### Phase 1
 After having learnt the relevant theory, we tried to implement that in the existing DeepSphere codebase. So, we need a way to efficiently solve a linear system of the shape :
-$$ \textbf{Ay}_i = \textbf{By}_{i-1} $$
+$$ \textbf{By}_i = \textbf{Ay}_{i-1} $$
 
 We solve it for $\textbf{y}_i$ Knowing that $\textbf{A}$ and $\textbf{B}$ are hermitian semi-definite positive, and sparse. This system resolution will be applied $K$ times at every layer of the convolutional network, $K$ being the degree of our filter's polynomial. A priori, the necessary functions exist in `numpy`, so we thought about using that.
 
