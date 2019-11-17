@@ -405,82 +405,86 @@ class cgcnn(base_model):
         dir_name: Name for directories (summaries and model parameters).
     """
 
-    def __init__(self, L, F, K, p, batch_norm, M,
+    def __init__(self, L=None, F, K, p, batch_norm, M,
                 num_epochs, scheduler, optimizer,
                 conv='chebyshev5', pool='max', activation='relu', statistics=None,
                 regularization=0, dropout=1, batch_size=128, eval_frequency=200,
-                dir_name='', profile=False, debug=False):
+                dir_name='', profile=False, debug=False, use_FEM=False, A=None, cholB=None):
         super(cgcnn, self).__init__()
 
-        # Verify the consistency w.r.t. the number of layers.
-        if not len(L) == len(F) == len(K) == len(p) == len(batch_norm):
-            raise ValueError('Wrong specification of the convolutional layers: '
-                             'parameters L, F, K, p, batch_norm, must have the same length.')
-        if not np.all(np.array(p) >= 1):
-            raise ValueError('Down-sampling factors p should be greater or equal to one.')
-        p_log2 = np.where(np.array(p) > 1, np.log2(p), 0)
-        if not np.all(np.mod(p_log2, 1) == 0):
-            raise ValueError('Down-sampling factors p should be powers of two.')
-        if len(M) == 0 and p[-1] != 1:
-            raise ValueError('Down-sampling should not be used in the last '
-                             'layer if no fully connected layer follows.')
+        if use_FEM:
+            print("Using FEM...")
+        else:
+            # Verify the consistency w.r.t. the number of layers.
+            if not len(L) == len(F) == len(K) == len(p) == len(batch_norm):
+                raise ValueError('Wrong specification of the convolutional layers: '
+                                 'parameters L, F, K, p, batch_norm, must have the same length.')
+            if not np.all(np.array(p) >= 1):
+                raise ValueError('Down-sampling factors p should be greater or equal to one.')
+            p_log2 = np.where(np.array(p) > 1, np.log2(p), 0)
+            if not np.all(np.mod(p_log2, 1) == 0):
+                raise ValueError('Down-sampling factors p should be powers of two.')
+            if len(M) == 0 and p[-1] != 1:
+                raise ValueError('Down-sampling should not be used in the last '
+                                 'layer if no fully connected layer follows.')
 
-        # Keep the useful Laplacians only. May be zero.
-        M_0 = L[0].shape[0]
-        j = 0
-        self.L = L
+            # Keep the useful Laplacians only. May be zero.
+            M_0 = L[0].shape[0]
+            j = 0
+            self.L = L
 
-        # Print information about NN architecture.
-        Ngconv = len(p)
-        Nfc = len(M)
-        print('NN architecture')
-        print('  input: M_0 = {}'.format(M_0))
-        M_last = M_0
-        for i in range(Ngconv):
-            print('  layer {0}: cgconv{0}'.format(i+1))
-            print('    representation: M_{0} * F_{1} / p_{1} = {2} * {3} / {4} = {5}'.format(
-                    i, i+1, L[i].shape[0], F[i], p[i], L[i].shape[0]*F[i]//p[i]))
-            F_last = F[i-1] if i > 0 else 1
-            print('    weights: F_{0} * F_{1} * K_{1} = {2} * {3} * {4} = {5}'.format(
-                    i, i+1, F_last, F[i], K[i], F_last*F[i]*K[i]))
-            if not (i == Ngconv-1 and len(M) == 0):  # No bias if it's a softmax.
-                print('    biases: F_{} = {}'.format(i+1, F[i]))
-            if batch_norm[i]:
-                print('    batch normalization')
+            # Print information about NN architecture.
+            Ngconv = len(p)
+            Nfc = len(M)
+            print('NN architecture')
+            print('  input: M_0 = {}'.format(M_0))
+            M_last = M_0
+            for i in range(Ngconv):
+                print('  layer {0}: cgconv{0}'.format(i+1))
+                print('    representation: M_{0} * F_{1} / p_{1} = {2} * {3} / {4} = {5}'.format(
+                        i, i+1, L[i].shape[0], F[i], p[i], L[i].shape[0]*F[i]//p[i]))
+                F_last = F[i-1] if i > 0 else 1
+                print('    weights: F_{0} * F_{1} * K_{1} = {2} * {3} * {4} = {5}'.format(
+                        i, i+1, F_last, F[i], K[i], F_last*F[i]*K[i]))
+                if not (i == Ngconv-1 and len(M) == 0):  # No bias if it's a softmax.
+                    print('    biases: F_{} = {}'.format(i+1, F[i]))
+                if batch_norm[i]:
+                    print('    batch normalization')
 
-        if Ngconv:
-            M_last = L[-1].shape[0] * F[-1] // p[-1]
+            if Ngconv:
+                M_last = L[-1].shape[0] * F[-1] // p[-1]
 
-        if statistics is not None:
-            print('  Statistical layer: {}'.format(statistics))
-            if statistics is 'mean':
-                M_last = F[-1]
-                print('    representation: 1 * {} = {}'.format(F[-1], M_last))
-            elif statistics is 'var':
-                M_last = F[-1]
-                print('    representation: 1 * {} = {}'.format(F[-1], M_last))
-            elif statistics is 'meanvar':
-                M_last = 2 * F[-1]
-                print('    representation: 2 * {} = {}'.format(F[-1], M_last))
-            elif statistics is 'histogram':
-                nbins = 20
-                M_last = nbins * F[-1]
-                print('    representation: {} * {} = {}'.format(nbins, F[-1], M_last))
-                print('    weights: {} * {} = {}'.format(nbins, F[-1], M_last))
-                print('    biases: {} * {} = {}'.format(nbins, F[-1], M_last))
+            if statistics is not None:
+                print('  Statistical layer: {}'.format(statistics))
+                if statistics is 'mean':
+                    M_last = F[-1]
+                    print('    representation: 1 * {} = {}'.format(F[-1], M_last))
+                elif statistics is 'var':
+                    M_last = F[-1]
+                    print('    representation: 1 * {} = {}'.format(F[-1], M_last))
+                elif statistics is 'meanvar':
+                    M_last = 2 * F[-1]
+                    print('    representation: 2 * {} = {}'.format(F[-1], M_last))
+                elif statistics is 'histogram':
+                    nbins = 20
+                    M_last = nbins * F[-1]
+                    print('    representation: {} * {} = {}'.format(nbins, F[-1], M_last))
+                    print('    weights: {} * {} = {}'.format(nbins, F[-1], M_last))
+                    print('    biases: {} * {} = {}'.format(nbins, F[-1], M_last))
 
-        for i in range(Nfc):
-            name = 'logits (softmax)' if i == Nfc-1 else 'fc{}'.format(i+1)
-            print('  layer {}: {}'.format(Ngconv+i+1, name))
-            print('    representation: M_{} = {}'.format(Ngconv+i+1, M[i]))
-            print('    weights: M_{} * M_{} = {} * {} = {}'.format(
-                    Ngconv+i, Ngconv+i+1, M_last, M[i], M_last*M[i]))
-            if i < Nfc - 1:  # No bias if it's a softmax.
-                print('    biases: M_{} = {}'.format(Ngconv+i+1, M[i]))
-            M_last = M[i]
+            for i in range(Nfc):
+                name = 'logits (softmax)' if i == Nfc-1 else 'fc{}'.format(i+1)
+                print('  layer {}: {}'.format(Ngconv+i+1, name))
+                print('    representation: M_{} = {}'.format(Ngconv+i+1, M[i]))
+                print('    weights: M_{} * M_{} = {} * {} = {}'.format(
+                        Ngconv+i, Ngconv+i+1, M_last, M[i], M_last*M[i]))
+                if i < Nfc - 1:  # No bias if it's a softmax.
+                    print('    biases: M_{} = {}'.format(Ngconv+i+1, M[i]))
+                M_last = M[i]
 
         # Store attributes and bind operations.
-        self.L, self.F, self.K, self.p, self.M = L, F, K, p, M
+        self.L, self.F, self.K, self.p, self.M, self.A, self.cholB = L, F, K, p, M, A, cholB
+        self.use_FEM = use_FEM
         self.num_epochs = num_epochs
         self.scheduler, self.optimizer = scheduler, optimizer
         self.regularization, self.dropout = regularization, dropout
@@ -566,6 +570,47 @@ class cgcnn(base_model):
         x = tf.reshape(x, [N*M, Fin*K])  # N*M x Fin*K
         # Filter: Fin*Fout filters of order K, i.e. one filterbank per output feature.
         W = self._weight_variable([Fin*K, Fout], regularization=True)
+        x = tf.matmul(x, W)  # N*M x Fout
+        return tf.reshape(x, [N, M, Fout])  # N x M x Fout
+
+    def monomials_FEM(self, x, A, cholB, Fout, K):
+        r"""Convolution on graph with monomials."""
+        N, M, Fin = x.get_shape()
+        N, M, Fin = int(N), int(M), int(Fin)
+
+        # Store A and cholB TF sparse tensor. Copy to not modify the shared L.
+        A = A.tocoo()
+        indices = np.column_stack((A.row, A.col))
+        A = tf.SparseTensor(indices, A.data, A.shape)
+        A = tf.sparse_reorder(A)
+        cholB = cholB.tocoo()
+        indices = np.column_stack((cholB.row, cholB.col))
+        cholB = tf.SparseTensor(indices, cholB.data, cholB.shape)
+        cholB = tf.sparse_reorder(cholB)
+
+        # Transform to monomial basis.
+        x0 = tf.transpose(x, perm=[1, 2, 0])  # M x Fin x N
+        x0 = tf.reshape(x0, [M, Fin*N])  # M x Fin*N
+        x = tf.expand_dims(x0, 0)  # 1 x M x Fin*N
+
+        def concat(x, x_):
+            x_ = tf.expand_dims(x_, 0)  # 1 x M x Fin*N
+            return tf.concat([x, x_], axis=0)  # K x M x Fin*N
+
+        for k in range(1, K):
+            rhs = tf.sparse_tensor_dense_matmul(A, x0)  # M x Fin*N
+            x1 = tf.cholesky_solve(cholB, rhs)  # M x Fin*N
+            x = concat(x, x1)
+            x0 = x1
+
+        x = tf.reshape(x, [K, M, Fin, N])  # K x M x Fin x N
+        x = tf.transpose(x, perm=[3, 1, 2, 0])  # N x M x Fin x K
+        x = tf.reshape(x, [N*M, Fin*K])  # N*M x Fin*K
+
+        # Filter: Fin*Fout filters of order K, i.e. one filterbank per output feature.
+        W = self._weight_variable([Fin*K, Fout], regularization=True)
+
+        ############ WHAT IS THIS matmul FOR ?
         x = tf.matmul(x, W)  # N*M x Fout
         return tf.reshape(x, [N, M, Fout])  # N x M x Fout
 
@@ -786,11 +831,15 @@ class deepsphere(cgcnn):
         dir_name: Name for directories (summaries and model parameters).
     """
 
-    def __init__(self, nsides, indexes=None, use_4=False, **kwargs):
-        L, p = utils.build_laplacians(nsides, indexes=indexes, use_4=use_4)
+    def __init__(self, nsides, indexes=None, use_4=False, use_FEM=False **kwargs):
+        if use_FEM:
+            A, cholB, p = utils.get_As_cholBs(nsides)
+            super(deepsphere, self).__init__(A=A, cholB=cholB, p=p, use_FEM=True **kwargs)
+        else:
+            L, p = utils.build_laplacians(nsides, indexes=indexes, use_4=use_4)
+            super(deepsphere, self).__init__(L=L, p=p, **kwargs)
         self.nsides = nsides
         self.pygsp_graphs = [None] * len(nsides)
-        super(deepsphere, self).__init__(L=L, p=p, **kwargs)
 
     def get_gsp_filters(self, layer,  ind_in=None, ind_out=None):
         """Get the filter as a pygsp format
