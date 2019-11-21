@@ -1,0 +1,6 @@
+model_checkpoint_path: "/Users/Mart/Documents/EPFL/Arnaud/deepsphere-fem/deepsphere/../checkpoints/whole_sphere/model-112"
+all_model_checkpoint_paths: "/Users/Mart/Documents/EPFL/Arnaud/deepsphere-fem/deepsphere/../checkpoints/whole_sphere/model-60"
+all_model_checkpoint_paths: "/Users/Mart/Documents/EPFL/Arnaud/deepsphere-fem/deepsphere/../checkpoints/whole_sphere/model-75"
+all_model_checkpoint_paths: "/Users/Mart/Documents/EPFL/Arnaud/deepsphere-fem/deepsphere/../checkpoints/whole_sphere/model-90"
+all_model_checkpoint_paths: "/Users/Mart/Documents/EPFL/Arnaud/deepsphere-fem/deepsphere/../checkpoints/whole_sphere/model-105"
+all_model_checkpoint_paths: "/Users/Mart/Documents/EPFL/Arnaud/deepsphere-fem/deepsphere/../checkpoints/whole_sphere/model-112"

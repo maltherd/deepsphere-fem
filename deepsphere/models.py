@@ -405,7 +405,7 @@ class cgcnn(base_model):
         dir_name: Name for directories (summaries and model parameters).
     """
 
-    def __init__(self, L=None, F, K, p, batch_norm, M,
+    def __init__(self, L, F, K, p, batch_norm, M,
                 num_epochs, scheduler, optimizer,
                 conv='chebyshev5', pool='max', activation='relu', statistics=None,
                 regularization=0, dropout=1, batch_size=128, eval_frequency=200,
@@ -831,7 +831,7 @@ class deepsphere(cgcnn):
         dir_name: Name for directories (summaries and model parameters).
     """
 
-    def __init__(self, nsides, indexes=None, use_4=False, use_FEM=False **kwargs):
+    def __init__(self, nsides, indexes=None, use_4=False, use_FEM=False, **kwargs):
         if use_FEM:
             A, cholB, p = utils.get_As_cholBs(nsides)
             super(deepsphere, self).__init__(A=A, cholB=cholB, p=p, use_FEM=True **kwargs)
