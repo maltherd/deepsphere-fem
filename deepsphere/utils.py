@@ -340,9 +340,9 @@ def build_laplacians(nsides, indexes=None, use_4=False):
     if indexes is None:
         indexes = [None] * len(nsides)
     for i, (nside, index) in enumerate(zip(nsides, indexes)):
+        nside_last = nside
         if i > 0:  # First is input dimension.
             p.append((nside_last // nside)**2)
-        nside_last = nside
         if i < len(nsides) - 1:  # Last does not need a Laplacian.
             laplacian = healpix_laplacian(nside=nside, indexes=index, use_4=use_4)
             L.append(laplacian)
@@ -350,16 +350,19 @@ def build_laplacians(nsides, indexes=None, use_4=False):
 
 
 def get_As_cholBs(nsides):
+    this_directory = os.path.dirname(os.path.abspath(__file__))
     As = []
     cholBs = []
     p = []
     for i, nside in enumerate(nsides):
+        nside_last = nside
         if i > 0:
             p.append((nside_last // nside)**2)
-        nside_last = nside
         if i < len(nsides) - 1:
-            A = scipy.sparse.load_npz('../matrices/{}_stiffness.npz'.format(nside))
-            cholB = scipy.sparse.load_npz('../matrices/{}_cholB.npz'.format(nside))
+            A = sparse.load_npz(this_directory +
+                                '/matrices/{}_stiffness.npz'.format(nside))
+            cholB = sparse.load_npz(this_directory +
+                                    '/matrices/{}_cholB.npz'.format(nside))
             As.append(A)
             cholBs.append(cholB)
     return As, cholBs, p
@@ -396,7 +399,7 @@ def build_matrix_4_neighboors(nside, indexes, nest=True, dtype=np.float32):
 
     npix = hp.nside2npix(nside) // hp.nside2npix(order)
     new_indexes = list(range(npix))
-    assert(set(indexes)==set(new_indexes))
+    assert(set(indexes) == set(new_indexes))
 
     x, y, z = hp.pix2vec(nside, indexes, nest=True)
     coords = np.vstack([x, y, z]).transpose()
