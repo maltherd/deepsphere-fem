@@ -226,7 +226,7 @@ class base_model(object):
         with self.graph.as_default():
 
             # Make the dataset
-            self.tf_train_dataset = tf.data.Dataset().from_generator(self.loadable_generator.iter, output_types=(tf.float32, tf.int32))
+            self.tf_train_dataset = tf.data.Dataset.from_generator(self.loadable_generator.iter, output_types=(tf.float32, tf.int32))
             self.tf_data_iterator = self.tf_train_dataset.prefetch(2).make_initializable_iterator()
             ph_data, ph_labels = self.tf_data_iterator.get_next()
 
@@ -647,13 +647,13 @@ class cgcnn(base_model):
         # Store A and cholB TF sparse tensor. Copy to not modify the shared L.
         A = A.tocoo()
         indices = np.column_stack((A.row, A.col))
-        A = tf.SparseTensor(indices, np.array(A.data), A.shape)
+        A = tf.SparseTensor(indices, np.array(A.data, dtype='float32'), A.shape)
         A = tf.sparse_reorder(A)
         # cholB = cholB.tocoo()
         # indices = np.column_stack((cholB.row, cholB.col))
         # cholB = tf.SparseTensor(indices, np.array(cholB.data, dtype='float32'), cholB.shape)
         # cholB = tf.sparse_reorder(cholB)
-        cholB = tf.constant(cholB.toarray())
+        cholB = tf.constant(cholB.toarray(), dtype=tf.float32)
         # Transform to monomial basis.
         x0 = tf.transpose(x, perm=[1, 2, 0])  # M x Fin x N
         x0 = tf.reshape(x0, [M, Fin*N])  # M x Fin*N
