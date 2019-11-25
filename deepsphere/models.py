@@ -647,7 +647,7 @@ class cgcnn(base_model):
         # Store A and cholB TF sparse tensor. Copy to not modify the shared L.
         A = A.tocoo()
         indices = np.column_stack((A.row, A.col))
-        A = tf.SparseTensor(indices, np.array(A.data, dtype='float32'), A.shape)
+        A = tf.SparseTensor(indices, np.array(A.data), A.shape)
         A = tf.sparse_reorder(A)
         # cholB = cholB.tocoo()
         # indices = np.column_stack((cholB.row, cholB.col))
