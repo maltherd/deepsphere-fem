@@ -67,7 +67,7 @@ class base_model(object):
     # High-level interface which runs the constructed computational graph.
 
     def predict(self, data, labels=None, sess=None):
-        loss = 0
+        loss = 0.0
         size = data.shape[0]
         predictions = np.empty(size)
         sess = self._get_session(sess)
@@ -87,7 +87,10 @@ class base_model(object):
                 batch_labels = np.zeros(self.batch_size)
                 batch_labels[:end-begin] = labels[begin:end]
                 feed_dict[self.ph_labels] = batch_labels
+                print('ops :', self.op_prediction, self.op_loss)
+                print('feeds : ', batch_data.shape, batch_labels.shape)
                 batch_pred, batch_loss = sess.run([self.op_prediction, self.op_loss], feed_dict)
+                print('batch_loss : ', batch_loss)
                 loss += batch_loss
             else:
                 batch_pred = sess.run(self.op_prediction, feed_dict)
@@ -155,7 +158,7 @@ class base_model(object):
 
         val_data, val_labels = val_dataset.get_all_data()
         for step in range(1, num_steps+1):
-
+            print('step', step)
             if not use_tf_dataset:
                 batch_data, batch_labels = next(train_iter)
                 if type(batch_data) is not np.ndarray:
@@ -163,6 +166,9 @@ class base_model(object):
                 feed_dict = {self.ph_data: batch_data, self.ph_labels: batch_labels, self.ph_training: True}
             else:
                 feed_dict = {self.ph_training: True}
+
+            print('ops :', self.op_train, self.op_loss)
+            print('feeds :', batch_data.shape, batch_labels.shape)
 
             learning_rate, loss = sess.run([self.op_train, self.op_loss], feed_dict)
 
@@ -576,6 +582,7 @@ class cgcnn(base_model):
     def monomials_FEM(self, x, A, cholB, Fout, K):
         r"""Convolution on graph with monomials."""
         N, M, Fin = x.get_shape()
+        print('nmf :', N, M, Fin)
         N, M, Fin = int(N), int(M), int(Fin)
 
         # Store A and cholB TF sparse tensor. Copy to not modify the shared L.
@@ -598,6 +605,7 @@ class cgcnn(base_model):
             return tf.concat([x, x_], axis=0)  # K x M x Fin*N
 
         for k in range(1, K):
+            print('shapes :', A.shape, x0.shape)
             rhs = tf.sparse_tensor_dense_matmul(A, x0)  # M x Fin*N
             x1 = tf.cholesky_solve(cholB, rhs)  # M x Fin*N
             x = concat(x, x1)
@@ -698,7 +706,16 @@ class cgcnn(base_model):
         for i in range(len(self.p)):
             with tf.variable_scope('conv{}'.format(i+1)):
                 with tf.name_scope('filter'):
+<<<<<<< Updated upstream
                     x = self.filter(x, self.L[i], self.F[i], self.K[i])
+=======
+                    if self.use_FEM:
+                        print('pooling now: ', self.p[i])
+                        x = self.monomials_FEM(x, self.A[i], self.cholB[i],
+                                               self.F[i], self.K[i])
+                    else:
+                        x = self.filter(x, self.L[i], self.F[i], self.K[i])
+>>>>>>> Stashed changes
                 if i == len(self.p)-1 and len(self.M) == 0:
                     break  # That is a linear layer before the softmax.
                 if self.batch_norm[i]:
