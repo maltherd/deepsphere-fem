@@ -340,12 +340,12 @@ def build_laplacians(nsides, indexes=None, use_4=False):
     if indexes is None:
         indexes = [None] * len(nsides)
     for i, (nside, index) in enumerate(zip(nsides, indexes)):
-        nside_last = nside
         if i > 0:  # First is input dimension.
             p.append((nside_last // nside)**2)
         if i < len(nsides) - 1:  # Last does not need a Laplacian.
             laplacian = healpix_laplacian(nside=nside, indexes=index, use_4=use_4)
             L.append(laplacian)
+        nside_last = nside
     return L, p
 
 
@@ -355,7 +355,6 @@ def get_As_cholBs(nsides):
     cholBs = []
     p = []
     for i, nside in enumerate(nsides):
-        nside_last = nside
         if i > 0:
             p.append((nside_last // nside)**2)
         if i < len(nsides) - 1:
@@ -365,6 +364,9 @@ def get_As_cholBs(nsides):
                                     '/matrices/{}_cholB.npz'.format(nside))
             As.append(A)
             cholBs.append(cholB)
+        nside_last = nside
+
+    print('A,cholB,p :', As, cholBs, p)
     return As, cholBs, p
 
 

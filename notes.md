@@ -117,6 +117,3 @@ So, we found a python package to address that : `scikit-sparse`. For our purpose
 The decomposition is ~4 orders of magnitude faster than `tf.linalg.cholesky`, as can be seen in the accompanying `Cholesky.ipynb` notebook, and the resolution is (slightly) faster than Tensorflow too.
 
 We still need the gradients, so we'll still use `tf.linalg.cholesky_solve` in every layer, but the previous step of decomposing $\textbf{B}$ will be much faster.
-
-*oublier l'adaptation de utils.deepsphere*
-*faire des beaux plots pour Cholesky => temps de résolution avec différents npix (nside 4,8,16,32,64) pour cholesky_solve Tensorflow et solve naïf*
