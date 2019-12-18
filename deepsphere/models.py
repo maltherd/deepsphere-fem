@@ -684,7 +684,6 @@ class cgcnn(base_model):
         # Filter: Fin*Fout filters of order K, i.e. one filterbank per output feature.
         W = self._weight_variable([Fin*K, Fout], regularization=True)
 
-        ############ WHAT IS THIS matmul FOR ?
         x = tf.matmul(x, W)  # N*M x Fout
         return tf.reshape(x, [N, M, Fout])  # N x M x Fout
 

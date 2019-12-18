@@ -366,7 +366,6 @@ def get_As_cholBs(nsides):
             cholBs.append(cholB)
         nside_last = nside
 
-    print('A,cholB,p :', As, cholBs, p)
     return As, cholBs, p
 
 

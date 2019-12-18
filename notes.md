@@ -13,7 +13,7 @@ This is why we look for an approximation of this Fourier basis.
 We can add that, for a given manifold, there exists an operator $L$, called the Laplacian operator, which eigenfunctions coincide with that manifold's Fourier basis. From now on, we will just look for an approximation of $L$. That is fine, because its eigendecomposition still gives us the Fourier Basis, and also we will see that doing this is simpler for our purposes.
 
 ### Graph Laplacian
-It has been shown that, by building a graph which nodes are sampled from a manifold, this graph's *Graph Laplacian*, defined as follows, tends to that manifold's Laplacian under certain conditions.
+It has been shown that, by building a graph which nodes are sampled from a manifold, this graph's *Graph Laplacian*, defined as follows, converge to that manifold's Laplacian under certain conditions.
 
 A graph $G$'s Laplacian is a matrix defined as :
 $$ \textbf{L} = \textbf{D} - \textbf{W} $$
@@ -32,7 +32,7 @@ $$ \int_{\mathbb{S}_2} \nabla f(x) \cdot \nabla v(x)\mathrm{d}x = \lambda \int_{
 For all $v$ in our sufficiently regular function space.
 
 We then approximate $\mathbb{S}_2$ by a triangulation $\mathcal{T}$ which contains $n$ points. We also restrict our sufficiently regular function space to be $X^1_\mathcal{T}$, the space of all continuous piecewise linear functions on $\mathbb{S}_2$. All functions in that space are linear combinations of its basis functions :
-$$ \phi_i(x_j) = \delta_{ij} \space\space\space \forall x_j \in \mathcal{T} \space\space\space \forall i \in [0, n-1] $$
+$$ \phi_i(x_j) = \delta_{ij} ~~ \forall x_j \in \mathcal{T} ~~ \forall i \in [0, n-1] $$
 
 That means that the previous integral equation can be solved for all $v$ by solving it for all $\phi_i$. So, by writing the equation $n$ times, we can rephrase it with matrices :
 
@@ -65,23 +65,20 @@ $$ \mathbf{\hat x} = \mathbf{U}^\mathrm{T}\mathbf{x} $$
 
 And also the inverse transform : $\mathbf{x} = \mathbf{U}\mathbf{\hat x}$. So, by using the well-known definition of convolution as *the product of Fourier transforms*, we can derive a formula for the convolution $y$ of a signal $x$ by a filter $h$ as follows :
 
-(Note that we define $h$ as a function on $\mathbf{L}$, which is more intuitive.)
-
-$$ \mathbf{y} = h(\mathbf{L}) \mathbf{x} = h (\mathbf{U\Lambda U}^\mathrm{T}) \mathbf{x} = \mathbf{U}h(\mathbf{\Lambda})\mathbf{U}^\mathrm{T}\mathbf{x} $$
-
+$$ \mathbf{y} = \mathcal{F}_G^{-1}(\mathbf{K\hat{f}}) = \mathbf{UK\hat{f}} = \mathbf{UKU}^\mathrm{T}\mathbf{f} = \mathbf{U}h(\mathbf{\Lambda})\mathbf{U}^\mathrm{T}\mathbf{f} $$
+with a filter on frequencies :
+$$ h : \lambda \mapsto h(\lambda) $$
 Note that our FEM Laplacian does not have orthogonal eigenvectors like the standard graph Laplacian. This is fine, we just need to replace every $\mathbf{U}^\mathrm{T}$ with a $\mathbf{U}^\mathrm{-1}$.
 Also this all works, but we usually don't want to compute the eigendecomposition of $\mathbf{L}$. Indeed, since we will need many different $\mathbf{L}$'s (one for each layer), this decomposition would need to be computed multiple times.
 
 So, in order to increase performance, we limit ourselves to filters that are polynomial :
 
-$$ h(\mathbf{L}) = \sum_{k=0}^{K-1} \theta_k \mathbf{L}^k $$
+$$ h(\lambda) = \sum_{k=0}^{K-1} \theta_k \lambda^k $$
 
 It can be shown that filters of this shape are localized to the K-nearest neighnbours of a node, which allows for some optimizations. Also, we can use a nice iterative algorithm to find the K summands. Here is the algorithm :
 
 $$
-\begin{array}{l}
-\mathbf{y} = h(\mathbf{L}) \mathbf{x} = \sum_{k=0}^{K-1} \theta_k \mathbf{L}^k\mathbf{x} = \sum_{k=0}^{K-1} \theta_k \mathbf{y}_k\\
-\end{array}
+\mathbf{y} = \mathbf{U}h(\mathbf{\Lambda})\mathbf{U}^\mathrm{T}\mathbf{f} = \mathbf{U}\left(\sum_{k=0}^{K-1} \theta_k \lambda^k\right)\mathbf{U}^\mathrm{T}\mathbf{f} = \sum_{k=0}^{K-1} \theta_k \mathbf{L}^k\mathbf{f}
 $$
 Where :
 $$
