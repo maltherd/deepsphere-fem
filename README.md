@@ -1,3 +1,3 @@
 This is my EPFL Bachelor semester project's repository.
 
-Enjoy!
+Check out [the notes](./notes.md) for an explanation
